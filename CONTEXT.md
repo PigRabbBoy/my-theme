@@ -21,11 +21,15 @@ _Avoid_: override, custom color
 ### Output
 
 **Target**:
-One piece of software that receives a Theme (Warp Terminal, Zed Editor).
+One piece of software that receives a Theme (Warp Terminal, Zed Editor, macOS Terminal).
 _Avoid_: app, platform, editor
 
+**macOS Terminal**:
+The terminal application bundled with macOS — a Target, distinct from the Design System's Terminal kit and from Warp Terminal.
+_Avoid_: Terminal.app, Apple Terminal, "the terminal"
+
 **Variant**:
-The light or dark rendition of a Theme, chosen to follow the operating system appearance.
+The light or dark rendition of a Theme. Which Variant is shown — following the operating system appearance or locked to one — is the user's choice per Target.
 _Avoid_: mode, flavor, appearance
 
 **Theme**:
@@ -33,7 +37,7 @@ The installable artifact for one Target, covering both Variants.
 _Avoid_: skin, color scheme
 
 **ANSI slot**:
-One of the 16 terminal colors (normal and bright × black, red, green, yellow, blue, magenta, cyan, white). Zed adds 8 dim slots.
+One of the 16 terminal colors (normal and bright × black, red, green, yellow, blue, magenta, cyan, white). Zed adds 8 dim slots. Each Variant has one set of ANSI slots shared by every Target that renders a terminal.
 _Avoid_: terminal color, palette entry
 
 **Contrast gate**:

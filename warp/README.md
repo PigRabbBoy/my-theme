@@ -28,6 +28,13 @@
 
 4. กดบันทึก Warp จะโหลด settings ใหม่ให้เอง จากนั้นจะสลับ Light/Dark ตามโหมดของ macOS
 
+   **ถ้าอยากล็อกไว้โหมดเดียว** ให้ตั้ง `system_theme = false` แล้วให้ `theme` ชี้ไปที่โหมดที่ต้องการ (บรรทัด `selected_system_themes` เก็บไว้ได้ ไม่มีผลตอนปิด `system_theme`)
+
+   ```toml
+   theme = { custom = { name = "PigRabb Dark", path = "pigrabb_dark.yaml" } }
+   system_theme = false
+   ```
+
 ## ถอนการติดตั้ง
 
 1. ใน `settings.toml` เปลี่ยนกลับเป็น theme เดิม เช่น
