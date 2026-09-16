@@ -1,0 +1,421 @@
+/* ============================================================
+   PigRabb Studio — Tokens (colors, type, spacing, radius, shadow, motion)
+   Single source of truth. Import in any HTML:
+     <link rel="stylesheet" href="/colors_and_type.css">
+   Pink-led brand from the PigRabb mascot: soft bubblegum pink + magenta
+   accent on warm cream, with cool-gray and plum-ink neutrals. OKLCH.
+   ============================================================ */
+
+/* --- Webfonts ---------------------------------------------- */
+/* @import MUST precede every other rule (CSS spec) — keep these two first. */
+/* Fredoka — rounded display, matches the PigRabb wordmark (Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+/* JetBrains Mono — code / tabular numerals (Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* Geist — self-hosted variable font (UI body) */
+@font-face {
+  font-family: 'Geist';
+  src: url('./fonts/Geist-VariableFont_wght.ttf') format('truetype-variations'),
+       url('./fonts/Geist-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ===== COLORS ===== */
+  /* Pink (primary / brand — soft bubblegum from the mascot) */
+  --color-pink-50:   oklch(97% 0.02 350);
+  --color-pink-100:  oklch(93% 0.055 350);
+  --color-pink-300:  oklch(86% 0.10 350);
+  --color-pink-500:  oklch(79% 0.125 350);  /* base ~ #F3A0C2, chroma eased for comfort */
+  --color-pink-700:  oklch(60% 0.15 352);
+  --color-pink-900:  oklch(42% 0.14 356);
+
+  /* Rose (secondary accent — warm berry; token name kept as 'cyan' for compatibility) */
+  --color-cyan-50:   oklch(96% 0.03 8);
+  --color-cyan-100:  oklch(91% 0.07 8);
+  --color-cyan-300:  oklch(82% 0.13 8);
+  --color-cyan-500:  oklch(71% 0.155 10);   /* warm rose */
+  --color-cyan-700:  oklch(54% 0.16 12);
+  --color-cyan-900:  oklch(40% 0.13 14);
+
+  /* Plum (tertiary / data-viz deep; token name kept as 'violet') */
+  --color-violet-100: oklch(91% 0.05 330);
+  --color-violet-500: oklch(57% 0.14 330);
+  --color-violet-700: oklch(44% 0.13 332);
+
+  /* Magenta (signature mascot linework accent) */
+  --color-magenta-500: oklch(50% 0.17 358);
+  --color-magenta-700: oklch(41% 0.15 359);
+
+  /* Brand-name aliases — the rose/plum scales live in the legacy cyan/violet
+     token names above; new code should use these. */
+  --color-rose-50:  var(--color-cyan-50);
+  --color-rose-100: var(--color-cyan-100);
+  --color-rose-300: var(--color-cyan-300);
+  --color-rose-500: var(--color-cyan-500);
+  --color-rose-700: var(--color-cyan-700);
+  --color-rose-900: var(--color-cyan-900);
+  --color-plum-100: var(--color-violet-100);
+  --color-plum-500: var(--color-violet-500);
+  --color-plum-700: var(--color-violet-700);
+
+  /* Cream (warm off-white surfaces — the hoodie) */
+  --color-cream-50:   oklch(98.5% 0.007 40); /* surface — never pure white (glare) */
+  --color-cream-100:  oklch(96% 0.010 40);  /* page bg */
+  --color-cream-200:  oklch(93% 0.012 40);
+  --color-cream-300:  oklch(88% 0.014 38);
+  --color-cream-400:  oklch(78% 0.018 36);
+
+  /* Gray (cool neutral — the shorts) */
+  --color-gray-100: oklch(96% 0.004 280);
+  --color-gray-200: oklch(91% 0.005 280);
+  --color-gray-300: oklch(82% 0.006 280);
+  --color-gray-400: oklch(70% 0.008 280);
+  --color-gray-500: oklch(54% 0.012 285);
+
+  /* Ink (text — plum-tinted near-black, hue 335°) */
+  --color-ink-300: oklch(68% 0.03 335);
+  --color-ink-500: oklch(49% 0.04 335);   /* tertiary text ≥ 6:1 on cream */
+  --color-ink-700: oklch(36% 0.04 335);
+  --color-ink-900: oklch(22% 0.025 335);  /* soft near-black, not pure black */
+
+  /* Semantic (functional status — kept legible, off-brand on purpose) */
+  --color-success-100: oklch(94% 0.05 160);
+  --color-success-500: oklch(76% 0.12 160);
+  --color-warning-100: oklch(94% 0.05 70);
+  --color-warning-500: oklch(80% 0.12 70);
+  --color-error-100:   oklch(93% 0.045 18);
+  --color-error-500:   oklch(62% 0.17 18);
+  --color-info-500:    var(--color-cyan-500);
+  /* 700 = accent/icon on a -100 tint · 900 = text on a -100 tint (both flip in dark) */
+  --color-success-700: oklch(42% 0.11 160);
+  --color-success-900: oklch(33% 0.09 165);
+  --color-warning-700: oklch(45% 0.10 70);
+  --color-warning-900: oklch(38% 0.09 70);
+  --color-error-700:   oklch(48% 0.16 18);
+  --color-error-900:   oklch(38% 0.12 15);
+  color-scheme: light;
+
+  /* ===== ROLE TOKENS ===== */
+  --bg-page:       var(--color-cream-100);
+  --bg-surface:    var(--color-cream-50);
+  --bg-elevated:   oklch(99% 0.005 40);   /* warm near-white, no pure #fff */
+  --bg-card:       var(--color-cream-200);
+  --text-primary:   var(--color-ink-900);
+  --text-secondary: var(--color-ink-700);
+  --text-tertiary:  var(--color-ink-500);
+  --text-disabled:  var(--color-ink-300);
+  --border-subtle:  var(--color-cream-300);
+  --border-strong:  var(--color-cream-400);
+  --bg-accent:  var(--color-pink-50);    /* tinted highlight surface — Card accent, IconButton soft, selected rows */
+  --fill-track: var(--color-cream-200);  /* inactive track / rail — Progress, Tabs, Switch off, Donut ring, Skeleton */
+  --scrim:      oklch(22% 0.025 335 / 0.42); /* drawer / modal overlay */
+  --text-link:        oklch(50% 0.15 10);   /* links — flips light in dark */
+  --text-link-hover:  oklch(40% 0.13 14);
+  --bg-inverse:   var(--color-ink-900);     /* tooltip / inverted chrome */
+  --text-inverse: var(--color-cream-50);
+
+  /* ===== TYPOGRAPHY ===== */
+  --font-sans:    'Geist', 'IBM Plex Sans Thai Looped', 'Noto Sans JP', system-ui, sans-serif;
+  --font-display: 'Fredoka', 'Geist', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+
+  --text-xs:   12px;   --leading-xs:   16px;
+  --text-sm:   14px;   --leading-sm:   20px;
+  --text-base: 16px;   --leading-base: 24px;
+  --text-lg:   18px;   --leading-lg:   28px;
+  --text-xl:   20px;   --leading-xl:   28px;
+  --text-2xl:  24px;   --leading-2xl:  32px;
+  --text-3xl:  30px;   --leading-3xl:  38px;
+  --text-4xl:  38px;   --leading-4xl:  44px;
+  --text-5xl:  48px;   --leading-5xl:  52px;
+  --text-6xl:  64px;   --leading-6xl:  68px;
+
+  /* ===== SPACING (4px base) ===== */
+  --space-0:   0;
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-24:  96px;
+  --space-32:  128px;
+
+  /* ===== RADIUS (rounder than default — friendly, matches the mascot) ===== */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-pill: 9999px;
+
+  /* ===== SHADOW (ink-tinted, hue 335°) ===== */
+  --shadow-sm: 0 1px 2px oklch(18% 0.028 335 / 0.06);
+  --shadow-md: 0 4px 12px oklch(18% 0.028 335 / 0.08), 0 2px 4px oklch(18% 0.028 335 / 0.04);
+  --shadow-lg: 0 12px 32px oklch(18% 0.028 335 / 0.12);
+  --shadow-glow-pink: 0 0 0 4px oklch(79% 0.125 350 / 0.28);
+  --shadow-glow-cyan: 0 0 0 4px oklch(71% 0.155 10 / 0.28);
+  --shadow-glow-rose: var(--shadow-glow-cyan); /* brand-name alias */
+
+  /* ===== MOTION ===== */
+  /* Easing + duration are motion tokens, outside the color/spacing/radius/shadow/font taxonomy. */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);   /* @kind other */
+  --ease-in:     cubic-bezier(0.7, 0, 0.84, 0);   /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);  /* @kind other */
+  --dur-fast: 150ms;  /* @kind other */
+  --dur-base: 250ms;  /* @kind other */
+  --dur-slow: 400ms;  /* @kind other */
+
+  /* ===== Z-INDEX ===== */
+  --z-dropdown: 1000;  /* @kind other */
+  --z-sticky:   1100;  /* @kind other */
+  --z-overlay:  1200;  /* @kind other */
+  --z-modal:    1300;  /* @kind other */
+  --z-popover:  1400;  /* @kind other */
+  --z-toast:    1500;  /* @kind other */
+}
+
+/* ============================================================
+   DARK MODE
+   Opt in with <html data-theme="dark"> (or data-theme="auto" to follow the OS).
+   Only the neutral + tint scales and role tokens change; brand 500s, ink text-on-brand,
+   spacing, radius and type stay identical — components need no dark-specific code.
+   ============================================================ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  /* Cream → plum-ink surfaces (hue 335°). Lifted off true black so the contrast
+     ratio with text stays ~12:1, not 18:1 — less halation on long reads. */
+  --color-cream-50:  oklch(25% 0.018 335);   /* surface */
+  --color-cream-100: oklch(20% 0.016 335);   /* page bg */
+  --color-cream-200: oklch(29% 0.020 335);   /* card / hover */
+  --color-cream-300: oklch(35% 0.020 335);   /* border subtle */
+  --color-cream-400: oklch(46% 0.022 335);   /* border strong / switch off */
+  --color-gray-100: oklch(28% 0.006 280);
+  --color-gray-200: oklch(34% 0.007 280);
+  /* Brand 500s dimmed a step — saturated fills glow on dark; ink-on-brand text still ≥ 7:1 */
+  --color-pink-300:  oklch(80% 0.08 350);
+  --color-pink-500:  oklch(76% 0.11 350);
+  --color-pink-700:  oklch(64% 0.13 352);
+  --color-cyan-300:  oklch(78% 0.10 8);
+  --color-cyan-500:  oklch(70% 0.13 10);
+  --color-cyan-700:  oklch(60% 0.14 12);
+  --color-violet-500: oklch(60% 0.13 330);
+  --color-magenta-500: oklch(66% 0.14 358);
+  --color-magenta-700: oklch(58% 0.14 359);
+  /* Tints flip dark; their -900 text partners flip light (kept off pure white) */
+  --color-pink-50:   oklch(28% 0.04 350);
+  --color-pink-100:  oklch(34% 0.06 350);
+  --color-pink-900:  oklch(88% 0.06 350);
+  --color-cyan-50:   oklch(28% 0.04 8);
+  --color-cyan-100:  oklch(34% 0.06 8);
+  --color-cyan-900:  oklch(87% 0.07 8);
+  --color-violet-100: oklch(34% 0.06 330);
+  --color-violet-700: oklch(85% 0.08 330);
+  --color-success-100: oklch(30% 0.05 160);
+  --color-success-500: oklch(72% 0.11 160);
+  --color-success-700: oklch(74% 0.11 160);
+  --color-success-900: oklch(87% 0.08 160);
+  --color-warning-100: oklch(31% 0.05 70);
+  --color-warning-500: oklch(78% 0.10 70);
+  --color-warning-700: oklch(78% 0.10 70);
+  --color-warning-900: oklch(89% 0.08 75);
+  --color-error-100:   oklch(30% 0.06 18);
+  --color-error-500:   oklch(68% 0.14 18);
+  --color-error-700:   oklch(74% 0.13 18);
+  --color-error-900:   oklch(87% 0.07 18);
+  /* Role tokens */
+  --bg-page:       var(--color-cream-100);
+  --bg-surface:    var(--color-cream-50);
+  --bg-elevated:   oklch(31% 0.020 335);
+  --bg-card:       oklch(27% 0.018 335);
+  --text-primary:   oklch(90% 0.010 335);   /* soft white, not 100% */
+  --text-secondary: oklch(76% 0.018 335);
+  --text-tertiary:  oklch(64% 0.022 335);
+  --text-disabled:  oklch(50% 0.022 335);
+  --text-link:        oklch(80% 0.10 8);
+  --text-link-hover:  oklch(88% 0.07 8);
+  --bg-inverse:   oklch(92% 0.012 335);
+  --text-inverse: oklch(22% 0.020 335);
+  --border-subtle:  var(--color-cream-300);
+  --border-strong:  var(--color-cream-400);
+  --bg-accent:  var(--color-pink-50);
+  --fill-track: oklch(32% 0.020 335);
+  --scrim:      oklch(8% 0.02 335 / 0.64);
+  --shadow-sm: 0 1px 2px oklch(5% 0.02 335 / 0.40);
+  --shadow-md: 0 4px 12px oklch(5% 0.02 335 / 0.50), 0 2px 4px oklch(5% 0.02 335 / 0.30);
+  --shadow-lg: 0 12px 32px oklch(5% 0.02 335 / 0.60);
+  --shadow-glow-pink: 0 0 0 4px oklch(76% 0.11 350 / 0.35);
+  --shadow-glow-cyan: 0 0 0 4px oklch(70% 0.13 10 / 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] {
+  color-scheme: dark;
+    /* Cream → plum-ink surfaces (hue 335°). Lifted off true black so the contrast
+       ratio with text stays ~12:1, not 18:1 — less halation on long reads. */
+    --color-cream-50:  oklch(25% 0.018 335);   /* surface */
+    --color-cream-100: oklch(20% 0.016 335);   /* page bg */
+    --color-cream-200: oklch(29% 0.020 335);   /* card / hover */
+    --color-cream-300: oklch(35% 0.020 335);   /* border subtle */
+    --color-cream-400: oklch(46% 0.022 335);   /* border strong / switch off */
+    --color-gray-100: oklch(28% 0.006 280);
+    --color-gray-200: oklch(34% 0.007 280);
+    /* Brand 500s dimmed a step — saturated fills glow on dark; ink-on-brand text still ≥ 7:1 */
+    --color-pink-300:  oklch(80% 0.08 350);
+    --color-pink-500:  oklch(76% 0.11 350);
+    --color-pink-700:  oklch(64% 0.13 352);
+    --color-cyan-300:  oklch(78% 0.10 8);
+    --color-cyan-500:  oklch(70% 0.13 10);
+    --color-cyan-700:  oklch(60% 0.14 12);
+    --color-violet-500: oklch(60% 0.13 330);
+    --color-magenta-500: oklch(66% 0.14 358);
+    --color-magenta-700: oklch(58% 0.14 359);
+    /* Tints flip dark; their -900 text partners flip light (kept off pure white) */
+    --color-pink-50:   oklch(28% 0.04 350);
+    --color-pink-100:  oklch(34% 0.06 350);
+    --color-pink-900:  oklch(88% 0.06 350);
+    --color-cyan-50:   oklch(28% 0.04 8);
+    --color-cyan-100:  oklch(34% 0.06 8);
+    --color-cyan-900:  oklch(87% 0.07 8);
+    --color-violet-100: oklch(34% 0.06 330);
+    --color-violet-700: oklch(85% 0.08 330);
+    --color-success-100: oklch(30% 0.05 160);
+    --color-success-500: oklch(72% 0.11 160);
+    --color-success-700: oklch(74% 0.11 160);
+    --color-success-900: oklch(87% 0.08 160);
+    --color-warning-100: oklch(31% 0.05 70);
+    --color-warning-500: oklch(78% 0.10 70);
+    --color-warning-700: oklch(78% 0.10 70);
+    --color-warning-900: oklch(89% 0.08 75);
+    --color-error-100:   oklch(30% 0.06 18);
+    --color-error-500:   oklch(68% 0.14 18);
+    --color-error-700:   oklch(74% 0.13 18);
+    --color-error-900:   oklch(87% 0.07 18);
+    /* Role tokens */
+    --bg-page:       var(--color-cream-100);
+    --bg-surface:    var(--color-cream-50);
+    --bg-elevated:   oklch(31% 0.020 335);
+    --bg-card:       oklch(27% 0.018 335);
+    --text-primary:   oklch(90% 0.010 335);   /* soft white, not 100% */
+    --text-secondary: oklch(76% 0.018 335);
+    --text-tertiary:  oklch(64% 0.022 335);
+    --text-disabled:  oklch(50% 0.022 335);
+    --text-link:        oklch(80% 0.10 8);
+    --text-link-hover:  oklch(88% 0.07 8);
+    --bg-inverse:   oklch(92% 0.012 335);
+    --text-inverse: oklch(22% 0.020 335);
+    --border-subtle:  var(--color-cream-300);
+    --border-strong:  var(--color-cream-400);
+    --bg-accent:  var(--color-pink-50);
+    --fill-track: oklch(32% 0.020 335);
+    --scrim:      oklch(8% 0.02 335 / 0.64);
+    --shadow-sm: 0 1px 2px oklch(5% 0.02 335 / 0.40);
+    --shadow-md: 0 4px 12px oklch(5% 0.02 335 / 0.50), 0 2px 4px oklch(5% 0.02 335 / 0.30);
+    --shadow-lg: 0 12px 32px oklch(5% 0.02 335 / 0.60);
+    --shadow-glow-pink: 0 0 0 4px oklch(76% 0.11 350 / 0.35);
+    --shadow-glow-cyan: 0 0 0 4px oklch(70% 0.13 10 / 0.35);
+  }
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT DEFAULTS
+   Apply by adding `class="pigrabb"` (internal scope name) to <body>.
+   ============================================================ */
+
+.pigrabb,
+body.pigrabb {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--text-primary);
+  background: var(--bg-page);
+  font-feature-settings: 'cv11' 1, 'ss01' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.pigrabb h1, .pigrabb .h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-3xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.pigrabb h2, .pigrabb .h2 {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.pigrabb h3, .pigrabb .h3 {
+  font-size: var(--text-xl);
+  line-height: var(--leading-xl);
+  font-weight: 600;
+}
+.pigrabb h4, .pigrabb .h4 {
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: 500;
+}
+.pigrabb p { margin: 0; }
+.pigrabb .lead {
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  color: var(--text-secondary);
+}
+.pigrabb .display {
+  font-family: var(--font-display);
+  font-size: var(--text-5xl);
+  line-height: var(--leading-5xl);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.pigrabb .hero {
+  font-family: var(--font-display);
+  font-size: var(--text-6xl);
+  line-height: var(--leading-6xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.pigrabb .label {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.pigrabb code, .pigrabb .mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.pigrabb .num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.pigrabb a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.pigrabb a:hover { color: var(--text-link-hover); text-decoration: underline; }
+
+.pigrabb ::selection { background: var(--color-pink-100); color: var(--color-pink-900); }
+
+/* ===== ANIMATION KEYFRAMES (used by Skeleton, Sheet, loaders) ===== */
+@keyframes pr-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes pr-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pr-pop { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pr-slide-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes pr-slide-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
