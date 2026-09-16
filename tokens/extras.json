@@ -1,0 +1,61 @@
+{
+  "_about": [
+    "Extras: colors the Themes need that tokens/colors_and_type.css does not define.",
+    "A value is a literal oklch(), a DS token (--color-ink-900, resolved in the Variant's scope) or night.<name>.",
+    "night = the DS Terminal kit palette (ui_kits/terminal/Terminal.jsx, constant T). Dark only.",
+    "ansi.dark: Terminal kit colors + off-brand blue/cyan at matched lightness/chroma.",
+    "ansi.light: hue + chroma of the DS -700 tokens (red=error, green=success, yellow=warning, magenta=pink), lightness raised to the lightest value still >= 4.6:1 on --bg-surface.",
+    "Brights not listed here are derived: Dark L+6, Light L-6. Zed dim slots: Dark L-10, Light L+10.",
+    "relevel: DS tokens whose value fails the Contrast gate as text on --bg-surface. Same hue + chroma, lightness moved to the nearest value >= 4.6:1. Applies to every Target."
+  ],
+  "relevel": {
+    "dark": {
+      "--color-violet-500": "oklch(64.5% 0.13 330)",
+      "--color-cyan-700": "oklch(65% 0.14 12)",
+      "--color-pink-700": "oklch(65% 0.13 352)"
+    },
+    "light": {
+      "--color-pink-700": "oklch(57% 0.15 352)"
+    }
+  },
+  "night": {
+    "bg": "oklch(19% 0.016 335)",
+    "chrome": "oklch(24% 0.018 335)",
+    "line": "oklch(32% 0.02 335)",
+    "fg": "oklch(90% 0.01 335)",
+    "dim": "oklch(62% 0.022 335)",
+    "sel": "oklch(30% 0.04 350)",
+    "pink": "oklch(82% 0.11 350)",
+    "rose": "oklch(78% 0.12 10)",
+    "green": "oklch(78% 0.12 160)",
+    "yellow": "oklch(84% 0.10 70)",
+    "red": "oklch(72% 0.15 18)",
+    "plum": "oklch(74% 0.10 330)"
+  },
+  "ansi": {
+    "dark": {
+      "black": "night.chrome",
+      "red": "night.red",
+      "green": "night.green",
+      "yellow": "night.yellow",
+      "blue": "oklch(76% 0.11 250)",
+      "magenta": "night.pink",
+      "cyan": "oklch(80% 0.09 200)",
+      "white": "--text-secondary",
+      "bright_black": "night.dim",
+      "bright_white": "night.fg"
+    },
+    "light": {
+      "black": "--color-ink-900",
+      "red": "oklch(57% 0.16 18)",
+      "green": "oklch(53.5% 0.11 160)",
+      "yellow": "oklch(55.5% 0.10 70)",
+      "blue": "oklch(55% 0.11 250)",
+      "magenta": "oklch(57% 0.15 352)",
+      "cyan": "oklch(54% 0.09 200)",
+      "white": "--color-cream-300",
+      "bright_black": "--color-ink-500",
+      "bright_white": "--color-cream-50"
+    }
+  }
+}
