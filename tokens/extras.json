@@ -6,7 +6,8 @@
     "ansi.dark: Terminal kit colors + off-brand blue/cyan at matched lightness/chroma.",
     "ansi.light: hue + chroma of the DS -700 tokens (red=error, green=success, yellow=warning, magenta=pink), lightness raised to the lightest value still >= 4.6:1 on --bg-surface.",
     "Brights not listed here are derived: Dark L+6, Light L-6. Zed dim slots: Dark L-10, Light L+10.",
-    "relevel: DS tokens whose value fails the Contrast gate as text on --bg-surface. Same hue + chroma, lightness moved to the nearest value >= 4.6:1. Applies to every Target."
+    "relevel: DS tokens whose value fails the Contrast gate as text on --bg-surface. Same hue + chroma, lightness moved to the nearest value >= 4.6:1. Applies to every Target.",
+    "relevel.light violet-500, cyan-700 + pink-700 go further (53%) to stay >= 4.6:1 on --bg-card, where DBeaver highlights the current line."
   ],
   "relevel": {
     "dark": {
@@ -15,7 +16,9 @@
       "--color-pink-700": "oklch(65% 0.13 352)"
     },
     "light": {
-      "--color-pink-700": "oklch(57% 0.15 352)"
+      "--color-violet-500": "oklch(53% 0.14 330)",
+      "--color-cyan-700": "oklch(53% 0.16 12)",
+      "--color-pink-700": "oklch(53% 0.15 352)"
     }
   },
   "night": {

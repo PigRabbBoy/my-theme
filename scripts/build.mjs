@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Builds every PigRabb Theme from the Design System tokens.
 //   in:  tokens/colors_and_type.css (vendored verbatim), tokens/extras.json
-//   out: warp/pigrabb_{dark,light}.yaml, zed/pigrabb.json, macos-terminal/PigRabb {Dark,Light}.terminal
+//   out: warp/pigrabb_{dark,light}.yaml, zed/pigrabb.json, macos-terminal/PigRabb {Dark,Light}.terminal,
+//        dbeaver/plugin/ (Eclipse theme plugin)
 // Nothing is written when the Contrast gate fails (exit 1).
-import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -454,6 +456,402 @@ function zedTheme(get, ansi, variant) {
   return { name: NAMES[variant], appearance: variant, style: { ...style, accents, players, syntax } };
 }
 
+// ---------- DBeaver ----------
+
+// DBeaver is Eclipse RCP: a theme is a CSS file registered by a plugin. The stylesheets DBeaver and Eclipse attach
+// to their stock light/dark themes don't follow a new theme id, so each PigRabb theme @imports them, then re-declares
+//  - every preference block with the same selector + :pseudo (a later block replaces the whole key list),
+//  - every widget rule whose stock value is a literal color,
+//  - the ColorDefinitions the remaining stock rules point at.
+// The dark theme id must contain "dark": Eclipse on macOS switches menus and scrollbars to dark only then.
+const DBEAVER_BUNDLE = 'com.pigrabb.dbeaver.themes';
+const DBEAVER_IMPORTS = {
+  dark: [
+    'org.eclipse.ui.themes/css/e4-dark_mac.css',
+    'org.eclipse.ui.themes/css/dark/e4-dark_preferencestyle.css',
+    'org.eclipse.ui.editors/css/e4-dark_preferencestyle.css',
+    'org.eclipse.gef/css/gef_dark.css',
+    'org.jkiss.dbeaver.core/css/e4-dark_dbeaver_prefstyle.css',
+    'org.jkiss.dbeaver.ui.editors.sql/css/e4-dark-sql-editor.css',
+    'org.jkiss.dbeaver.ui.editors.data/css/e4-dark-data-editor.css',
+    'org.jkiss.dbeaver.ui.editors.erd/css/e4-dark-erd-editor.css',
+  ],
+  light: [
+    'org.eclipse.ui.themes/css/e4_default_mac.css',
+    'org.jkiss.dbeaver.core/css/e4-dbeaver_prefstyle.css',
+    'org.jkiss.dbeaver.ui.editors.data/css/e4-data-editor.css',
+  ],
+};
+// --font-mono lists CSS names; SWT matches installed font families and skips the ones that are missing.
+const FONT_FAMILY = { 'SFMono-Regular': 'SF Mono' };
+const GENERIC_FONTS = ['monospace', 'sans-serif', 'serif', 'system-ui'];
+
+function dbeaverTheme(get, tokens, ansi, variant) {
+  const dark = variant === 'dark';
+  const label = `dbeaver/${variant}`;
+  const hex = (ref) => toHex(typeof ref === 'string' ? get(ref) : ref);
+  const rgb = (ref) => hex(ref).slice(1).match(/../g).map((v) => parseInt(v, 16)).join(',');
+  const accent = dark ? '--color-pink-500' : '--color-pink-700';
+  const currentLine = dark ? '--bg-page' : '--bg-card';
+
+  // Code surfaces use --font-mono at --text-sm; a `;` list falls back to the next installed family.
+  const size = parseFloat(tokens[variant]['--text-sm']).toFixed(1);
+  const font = tokens[variant]['--font-mono']
+    .split(',')
+    .map((f) => f.trim().replace(/^'|'$/g, ''))
+    .filter((f) => !GENERIC_FONTS.includes(f))
+    .map((f) => `1|${FONT_FAMILY[f] ?? f}|${size}|0|COCOA|1|`)
+    .join(';');
+
+  const sql = {
+    'text.foreground': '--text-primary',
+    'text.background': '--bg-surface',
+    'disabled.background': '--bg-card',
+    keyword: '--color-magenta-500',
+    command: '--color-magenta-500',
+    datatype: '--color-violet-500',
+    schema: '--color-violet-500',
+    table: '--color-violet-500',
+    'table.alias': '--color-violet-500',
+    function: '--color-cyan-700',
+    column: '--color-pink-700',
+    'column.derived': '--color-pink-700',
+    'composite.field': '--color-pink-700',
+    string: '--color-success-700',
+    number: '--color-warning-700',
+    parameter: '--color-warning-700',
+    sqlVariable: '--color-warning-700',
+    comment: '--text-tertiary',
+    delimiter: '--text-secondary',
+    semanticError: '--color-error-700',
+    'aiSuggestion.foreground': '--text-tertiary',
+    'aiSuggestion.background': '--bg-card',
+  };
+  const sqlKey = (name) => `org.jkiss.dbeaver.sql.editor.color.${name}${name.includes('ground') ? '' : '.foreground'}`;
+
+  // Result grid: only colors that stay readable on every row background (odd, selected, new/modified/deleted).
+  const gridValues = {
+    string: '--text-primary',
+    numeric: '--color-warning-700',
+    boolean: '--color-warning-700',
+    datetime: '--color-success-700',
+    binary: '--text-secondary',
+    null: '--text-tertiary',
+  };
+  const gridRows = {
+    'cell.odd.background': '--bg-card',
+    'preview.background': '--bg-card',
+    'selection.background': '--color-pink-100',
+    'cell.new.background': '--color-success-100',
+    'cell.modified.background': '--color-warning-100',
+    'cell.deleted.background': '--color-error-100',
+    'cell.error.background': '--color-error-100',
+    'cell.matched.background': '--bg-accent',
+    'cell.readonly.background': '--bg-page',
+  };
+  const grid = {
+    ...Object.fromEntries(Object.entries(gridValues).map(([k, v]) => [`${k}.foreground`, v])),
+    ...gridRows,
+    'selection.foreground': '--text-primary',
+    'lines.normal': '--border-subtle',
+    'lines.selected': '--border-strong',
+    'header.background': '--bg-page',
+    'header.foreground': '--text-secondary',
+    'header.selected.background': '--bg-accent',
+    'header.border': '--border-subtle',
+  };
+
+  const accents = [accent, '--color-cyan-700', '--color-violet-500', '--color-warning-700', '--color-success-700', ansi.normal.blue, ansi.normal.cyan];
+  const charts = [...accents, '--color-magenta-500', '--color-error-700', '--text-tertiary'];
+  const erdHeaders = ['--color-pink-100', '--color-cyan-100', '--color-violet-100', '--color-warning-100', '--color-success-100', '--bg-accent', '--bg-card'];
+
+  const colors = (entries) => Object.fromEntries(Object.entries(entries).map(([k, v]) => [k, rgb(v)]));
+  const prefBlocks = [
+    ['org-eclipse-ui-editors', 'org-eclipse-ui-themes', {
+      'AbstractTextEditor.Color.Background.SystemDefault': 'false',
+      'AbstractTextEditor.Color.Foreground.SystemDefault': 'false',
+      'AbstractTextEditor.Color.SelectionBackground.SystemDefault': 'false',
+      'AbstractTextEditor.Color.SelectionForeground.SystemDefault': 'false',
+      ...colors({
+        // DBeaver decides "dark UI" from how dark this background is, and the result grid paints cells with it.
+        'AbstractTextEditor.Color.Background': '--bg-surface',
+        'AbstractTextEditor.Color.Foreground': '--text-primary',
+        'AbstractTextEditor.Color.SelectionBackground': '--color-pink-100',
+        'AbstractTextEditor.Color.SelectionForeground': '--text-primary',
+        'AbstractTextEditor.Color.FindScope': '--bg-accent',
+        asOccurencesIndicationColor: '--bg-accent',
+        breakpointIndicationColor: accent,
+        currentIPColor: '--bg-card',
+        currentLineColor: currentLine,
+        deletionIndicationColor: '--color-error-500',
+        filteredSearchResultIndicationColor: '--border-strong',
+        hyperlinkColor: '--text-link',
+      }),
+      'hyperlinkColor.SystemDefault': 'false',
+      ...colors({
+        infoIndicationColor: '--color-cyan-500',
+        lineNumberColor: '--text-tertiary',
+        'linked.slave.color': accent,
+        matchingTagIndicationColor: '--bg-accent',
+        occurrenceIndicationColor: '--bg-accent',
+        overrideIndicatorColor: '--color-violet-500',
+        printMarginColor: '--border-subtle',
+      }),
+      searchResultHighlighting: 'false',
+      searchResultIndication: 'true',
+      ...colors({ searchResultIndicationColor: accent }),
+      searchResultTextStyle: 'BOX',
+      ...colors({
+        secondaryIPColor: '--bg-card',
+        spellingIndicationColor: '--color-error-500',
+        writeOccurrenceIndicationColor: '--color-warning-100',
+        'org.eclipse.ui.editors.stickyLinesSeparatorColor': '--border-subtle',
+      }),
+    }],
+    ['org-eclipse-ui-workbench', 'org-eclipse-ui-themes', colors({
+      ACTIVE_HYPERLINK_COLOR: '--text-link-hover',
+      HYPERLINK_COLOR: '--text-link',
+      CONFLICTING_COLOR: '--color-error-700',
+      ERROR_COLOR: '--color-error-700',
+      RESOLVED_COLOR: '--color-success-700',
+      INCOMING_COLOR: '--text-link',
+      OUTGOING_COLOR: '--text-primary',
+      EDITION_COLOR: '--text-primary',
+      CONTENT_ASSIST_BACKGROUND_COLOR: '--bg-elevated',
+      CONTENT_ASSIST_FOREGROUND_COLOR: '--text-primary',
+      'org.eclipse.ui.workbench.INFORMATION_BACKGROUND': '--bg-elevated',
+      'org.eclipse.ui.workbench.INFORMATION_FOREGROUND': '--text-primary',
+      'org.eclipse.ui.workbench.HOVER_BACKGROUND': '--bg-elevated',
+      'org.eclipse.ui.workbench.HOVER_FOREGROUND': '--text-primary',
+      'org.eclipse.ui.workbench.FORM_HEADING_ERROR_COLOR': '--color-error-700',
+      'org.eclipse.ui.workbench.FORM_HEADING_WARNING_COLOR': '--color-warning-700',
+      'org.eclipse.ui.workbench.FORM_HEADING_INFO_COLOR': '--text-secondary',
+      'org.eclipse.search.ui.match.highlight': '--color-pink-100',
+      'org.eclipse.ui.editors.rangeIndicatorColor': accent,
+      'org.eclipse.jface.REVISION_NEWEST_COLOR': accent,
+      'org.eclipse.jface.REVISION_OLDEST_COLOR': '--bg-card',
+    })],
+    ['org-eclipse-ui-workbench', 'org-eclipse-ui-editors', colors({ 'org.eclipse.ui.editors.inlineAnnotationColor': '--text-tertiary' })],
+    ['org-eclipse-ui-workbench', 'org-eclipse-draw2d', colors({
+      'org.eclipse.gef.color.line.foreground': '--border-strong',
+      'org.eclipse.gef.color.list.selected.background': '--bg-accent',
+      'org.eclipse.gef.color.list.hover.background': '--bg-card',
+      'org.eclipse.gef.color.list.background': '--bg-surface',
+      'org.eclipse.gef.color.list.foreground': '--text-primary',
+      'org.eclipse.gef.color.menu.background': '--bg-elevated',
+      'org.eclipse.gef.color.menu.foreground': '--text-primary',
+      'org.eclipse.gef.color.menu.foreground.selected': '--text-secondary',
+      'org.eclipse.gef.color.shadow': '--border-subtle',
+      'org.eclipse.gef.color.button': '--bg-card',
+    })],
+    ['org-eclipse-ui-workbench', 'org-jkiss-dbeaver-core', colors({
+      'org.jkiss.dbeaver.txn.color.committed.background': '--color-success-100',
+      'org.jkiss.dbeaver.txn.color.reverted.background': '--color-error-100',
+      'org.jkiss.dbeaver.txn.color.transaction.background': '--color-warning-100',
+      'org.jkiss.dbeaver.hex.editor.color.caret': '--bg-accent',
+      'org.jkiss.dbeaver.hex.editor.color.text': '--text-primary',
+      'org.jkiss.dbeaver.xml.editor.color.tag': '--color-magenta-500',
+      'org.jkiss.dbeaver.xml.editor.color.text': '--text-primary',
+      'org.jkiss.dbeaver.xml.editor.color.comment': '--text-tertiary',
+      'org.jkiss.dbeaver.color.connectionType.qa.background': '--color-success-100',
+      'org.jkiss.dbeaver.color.connectionType.prod.background': '--color-error-100',
+      'org.jkiss.dbeaver.ui.navigator.node.transient.foreground': '--color-success-700',
+      'org.jkiss.dbeaver.ui.navigator.node.new.background': '--color-success-100',
+      'org.jkiss.dbeaver.ui.navigator.node.modified.background': '--color-warning-100',
+      'org.jkiss.dbeaver.ui.navigator.node.foreground': '--text-secondary',
+      'org.jkiss.dbeaver.ui.navigator.node.statistics.background': '--bg-accent',
+      'org.jkiss.dbeaver.ui.general.accent': accent,
+      'org.jkiss.dbeaver.color.readOnly.foreground': '--color-warning-700',
+    })],
+    ['org-eclipse-ui-workbench', 'dbeaver-sql-editor', colors(Object.fromEntries(Object.entries(sql).map(([k, v]) => [sqlKey(k), v])))],
+    ['org-eclipse-ui-workbench', 'dbeaver-data-editor', colors(Object.fromEntries(Object.entries(grid).map(([k, v]) => [`org.jkiss.dbeaver.sql.resultset.color.${k}`, v])))],
+    ['org-eclipse-ui-workbench', 'dbeaver-erd-editor', colors({
+      'org.jkiss.dbeaver.erd.diagram.background': '--bg-surface',
+      'org.jkiss.dbeaver.erd.diagram.entity.regular.background': '--bg-card',
+      'org.jkiss.dbeaver.erd.diagram.entity.primary.background': '--bg-accent',
+      'org.jkiss.dbeaver.erd.diagram.entity.association.background': '--bg-card',
+      'org.jkiss.dbeaver.erd.diagram.entity.name.foreground': '--text-primary',
+      'org.jkiss.dbeaver.erd.diagram.attributes.background': '--bg-card',
+      'org.jkiss.dbeaver.erd.diagram.attributes.foreground': '--text-primary',
+      'org.jkiss.dbeaver.erd.diagram.search.highlighting': '--color-warning-100',
+      'org.jkiss.dbeaver.erd.diagram.fk.highlighting': '--color-success-100',
+      'org.jkiss.dbeaver.erd.diagram.notes.background': '--bg-elevated',
+      'org.jkiss.dbeaver.erd.diagram.notes.foreground': '--text-primary',
+      'org.jkiss.dbeaver.erd.diagram.lines.foreground': '--text-tertiary',
+    })],
+    ['org-eclipse-ui-workbench', 'pigrabb', {
+      'org.eclipse.jface.textfont': font,
+      'org.jkiss.dbeaver.dbeaver.ui.fonts.monospace': font,
+      'org.jkiss.dbeaver.sql.resultset.font': font,
+      ...colors(Object.fromEntries(charts.map((c, i) => [`org.jkiss.dbeaver.ui.data.chart.color.${i + 1}`, c]))),
+      ...colors(Object.fromEntries(accents.map((c, i) => [`org.jkiss.dbeaver.ui.presentation.erd.borders.color.${i + 1}`, c]))),
+      ...colors(Object.fromEntries(erdHeaders.map((c, i) => [`org.jkiss.dbeaver.ui.presentation.erd.headers.color.${i + 1}`, c]))),
+    }],
+  ];
+
+  // ColorDefinitions that stock widget rules reference.
+  const definitions = {
+    ACTIVE_TAB_BG_START: '--bg-surface',
+    ACTIVE_TAB_BG_END: '--bg-surface',
+    ACTIVE_NOFOCUS_TAB_BG_START: '--bg-surface',
+    ACTIVE_NOFOCUS_TAB_BG_END: '--bg-surface',
+    ACTIVE_UNSELECTED_TABS_COLOR_START: '--bg-page',
+    ACTIVE_UNSELECTED_TABS_COLOR_END: '--bg-page',
+    INACTIVE_UNSELECTED_TABS_COLOR_START: '--bg-page',
+    INACTIVE_UNSELECTED_TABS_COLOR_END: '--bg-page',
+    INACTIVE_TAB_BG_START: '--bg-page',
+    INACTIVE_TAB_BG_END: '--bg-page',
+    ACTIVE_TAB_OUTER_KEYLINE_COLOR: '--border-subtle',
+    ACTIVE_TAB_INNER_KEYLINE_COLOR: '--bg-surface',
+    ACTIVE_TAB_OUTLINE_COLOR: '--border-subtle',
+    INACTIVE_TAB_OUTER_KEYLINE_COLOR: '--border-subtle',
+    INACTIVE_TAB_INNER_KEYLINE_COLOR: '--bg-page',
+    INACTIVE_TAB_OUTLINE_COLOR: '--border-subtle',
+    ACTIVE_TAB_TEXT_COLOR: '--text-secondary',
+    INACTIVE_TAB_TEXT_COLOR: '--text-secondary',
+    ACTIVE_NOFOCUS_TAB_TEXT_COLOR: '--text-primary',
+    ...(dark
+      ? {
+          ACTIVE_TAB_UNSELECTED_TEXT_COLOR: '--text-secondary',
+          ACTIVE_TAB_SELECTED_TEXT_COLOR: '--text-primary',
+          INACTIVE_TAB_UNSELECTED_TEXT_COLOR: '--text-secondary',
+          INACTIVE_TAB_SELECTED_TEXT_COLOR: '--text-primary',
+          ACTIVE_NOFOCUS_TAB_SELECTED_TEXT_COLOR: '--text-primary',
+          DARK_BACKGROUND: '--bg-surface',
+          DARK_FOREGROUND: '--text-primary',
+          LINK_COLOR: '--text-link',
+        }
+      : { SECONDARY_BACKGROUND: '--bg-page' }),
+  };
+
+  const common = [
+    [['CTabFolder'], { 'swt-unselected-hot-tab-color-background': '--bg-card', 'swt-selected-tab-highlight': accent }],
+    [['.MPartStack'], { 'swt-selected-tab-highlight': '--border-strong', 'swt-unselected-hot-tab-color-background': '--bg-card' }],
+    [['.MPartStack.active'], { 'swt-selected-tab-highlight': accent }],
+    [['#org-eclipse-ui-editorss CTabFolder'], { 'swt-selected-tab-highlight': '--border-strong', 'swt-unselected-hot-tab-color-background': '--bg-card' }],
+    [['#org-eclipse-ui-editorss CTabFolder.active'], { 'swt-selected-tab-highlight': accent }],
+    [['#org-eclipse-ui-editorss CTabItem:selected'], { color: '--text-primary' }],
+    [['Table', 'Tree'], { 'swt-header-color': '--text-secondary', 'swt-header-background-color': '--bg-page' }],
+    [['#org-eclipse-e4-ui-compatibility-editor Canvas', '#org-eclipse-e4-ui-compatibility-editor Canvas > *'], { 'background-color': '--bg-surface' }],
+  ];
+  const surface = { 'background-color': '--bg-surface', color: '--text-primary' };
+  const input = { 'background-color': '--bg-card', color: '--text-primary' };
+  const darkRules = [
+    [['CTabFolder.active', "CTabFolder[style~='SWT.DOWN'][style~='SWT.BOTTOM']", ".MPartStack CTabFolder[style~='SWT.DOWN'][style~='SWT.BOTTOM']", ".MPartStack.active CTabFolder[style~='SWT.DOWN'][style~='SWT.BOTTOM']"],
+      { 'swt-unselected-hot-tab-color-background': '--bg-card', 'swt-selected-tab-highlight': accent }],
+    [['.MPartStack.active CTabFolder Canvas'], surface],
+    [['.MPartSashContainer'], { 'background-color': '--bg-page', color: '--text-primary' }],
+    [['.MPart', '.MPart Section > Label', '.MPart Table', '.MPart Browser', '.MPart ViewForm', '.MPart ViewForm > CLabel', '.MPart PageBook > Label', '.MPart PageBook > SashForm',
+      '.MPart FormHeading', '.MPart FormHeading > TitleRegion', '.MPart FormHeading > TitleRegion > Label', '.MPart FormHeading > TitleRegion > StyledText', '.MPart FormHeading > CLabel',
+      '.Editor Form Composite', '.Editor Form Composite Tree', '.MPartStack.active .Editor Form Composite Tree',
+      '#org-eclipse-e4-ui-compatibility-editor LayoutCanvas', 'Shell Tree', 'Shell Table', 'Shell List', 'ViewerPane', 'DrillDownComposite',
+      'Form', 'FormHeading', 'ScrolledFormText', 'FormText', 'PageSiteComposite > PropertyTable',
+      '#org-eclipse-ui-console-ConsoleView .MPart > Composite', '#org-eclipse-ui-console-ConsoleView .MPart StyledText', '#org-eclipse-ui-console-ConsoleView .MPart PageBook Label'], surface],
+    [['.MPart Composite', '.MPart Composite > *', '.MPart Composite > * > *', '.MPart Label', '.MPart ScrolledForm', '.MPart Form', '.MPart Section', '.MPart FormText', '.MPart Link',
+      '.MPart Sash', '.MPart Button', '.MPart Group', '.MPart SashForm', '.MPart Tree', '.MPart FilteredTree', '.MPart RegistryFilteredTree', '.MPart PageSiteComposite',
+      '.MPart DependenciesComposite', ".MPart Text[style~='SWT.READ_ONLY']", '.MPart FigureCanvas', '.MPart ListEditorComposite', '.MPart ScrolledComposite',
+      '.Mpart ScrolledComposite ProgressInfoItem', '.MPart Form ScrolledPageBook', '.MPart DependenciesComposite > SashForm > Section > *'], surface],
+    [['Combo', 'List', 'Text', 'Spinner', 'CCombo', 'Composite > StyledText', "Shell [style~='SWT.DROP_DOWN'] > StyledText", 'SashForm > StyledText',
+      "Text[style~='SWT.SEARCH']", "Text[style~='SWT.SEARCH'] + Label", 'DatePicker', 'DatePicker > Text', 'ScheduleDatePicker', 'ScheduleDatePicker > Text',
+      '.MPart Section Tree', '.MPart DatePicker', '.MPart DatePicker > Text', '.MPart ScheduleDatePicker', '.MPart ScheduleDatePicker > Text', '.MPart CCombo', '.MPart Spinner',
+      '.MPart Composite > StyledText', '.MPart PageBook > SashForm Label', ".MPart SashForm > Text[style~='SWT.BORDER']", 'PageSiteComposite > PropertyTable:disabled'], input],
+    [["Text[style~='SWT.READ_ONLY']"], { 'background-color': '--bg-surface', color: '--text-secondary' }],
+    [['Hyperlink', 'ImageHyperlink'], { color: '--text-link' }],
+    [['Form'], { 'text-background-color': '--bg-surface', 'tb-toggle-hover-color': '--text-primary', 'tb-toggle-color': '--text-secondary', 'h-hover-full-color': '--bg-card', 'h-hover-light-color': '--bg-card', 'h-bottom-keyline-2-color': '--border-subtle', 'h-bottom-keyline-1-color': '--border-subtle' }],
+    [['Section'], { 'background-color': '--bg-surface', color: '--text-primary', 'background-color-titlebar': '--bg-card', 'background-color-gradient-titlebar': '--bg-card', 'border-color-titlebar': '--border-subtle', 'swt-titlebar-color': '--text-primary', 'tb-toggle-hover-color': '--text-primary', 'tb-toggle-color': '--text-secondary' }],
+    [['ExpandableComposite'], { 'swt-titlebar-color': '--text-primary', 'tb-toggle-hover-color': '--text-primary', 'tb-toggle-color': '--text-secondary' }],
+    [['Twistie'], { color: '--text-secondary' }],
+    [['HeapStatus'], { 'background-color': '--bg-card', color: '--text-secondary' }],
+    [['PageSiteComposite', 'PageSiteComposite > CImageLabel', 'TabbedPropertyTitle > CLabel'], { color: '--text-primary' }],
+    [['TabbedPropertyTitle'], { 'swt-backgroundGradientStart-color': '--bg-card', 'swt-backgroundGradientEnd-color': '--bg-card', 'swt-backgroundBottomKeyline1-color': '--border-subtle', 'swt-backgroundBottomKeyline2-color': '--border-subtle' }],
+    [['CTabItem.busy'], { color: '--text-tertiary' }],
+    [['.ModifiedDragFeedback'], { 'background-color': accent }],
+  ];
+  const lightRules = [
+    [['.View Composite', '.View Composite Label', '.View ToolBar', '.View Group', '.View Group Label', '.View Section', '.View BusyIndicator', ".View Text[style~='SWT.READ_ONLY']",
+      '.View SashForm', '.View OleFrame', '.View Browser', '.View WebSite', ".View StyledText[style~='SWT.READ_ONLY']", '.View Link', '.View FormText', '.View Hyperlink',
+      '.View Canvas', '.View FigureCanvas', '.View Composite Tree', ".View Composite Tree[swt-lines-visible=false]",
+      '#org-eclipse-e4-ui-compatibility-editor Composite', 'Composite.MArea'], { 'background-color': '--bg-surface' }],
+    [['.View Composite PrependingAsteriskFilteredTree', '.View PrependingAsteriskFilteredTree Text', '.View Group Text', '.View Group Combo', '.View Composite Text', ".View Button[style~='SWT.PUSH']"], { 'background-color': '--bg-elevated' }],
+    [['.View Toolbar ToolItem'], { 'background-color': '--bg-page' }],
+    [['.View TabbedPropertyList'], { 'swt-tabBackground-color': '--bg-surface' }],
+    [['#org-eclipse-ui-editorss CTabItem'], { color: '--text-secondary', 'background-color': '--bg-page' }],
+    [['#org-eclipse-ui-editorss CTabItem:selected'], { color: '--text-primary', 'background-color': '--bg-surface' }],
+    [['#org-eclipse-ui-editorss CTabFolder'], { 'swt-selected-tab-fill': '--bg-surface', 'swt-tab-outline': '--border-subtle', 'swt-tab-outer-keyline': '--border-subtle', 'swt-unselected-hot-tab-color-background': '--bg-card' }],
+    [['.MPart CTabFolder'], { 'swt-outer-keyline-color': '--bg-surface' }],
+  ];
+
+  const value = (v) => (v.startsWith('--') ? hex(v) : v);
+  const rule = ([selectors, decls]) =>
+    `${selectors.join(',\n')} {\n${Object.entries(decls).map(([k, v]) => `  ${k}: ${value(v)};`).join('\n')}\n}`;
+  const css = [
+    [
+      `/* ${NAMES[variant]} for DBeaver. Generated by scripts/build.mjs from tokens/ - do not edit by hand. */`,
+      ...DBEAVER_IMPORTS[variant].map((p) => `@import url("platform:/plugin/${p}");`),
+    ].join('\n'),
+    ...Object.entries(definitions).map(([id, ref]) => `ColorDefinition#org-eclipse-ui-workbench-${id} {\n  color: ${hex(ref)};\n}`),
+    ...[...common, ...(dark ? darkRules : lightRules)].map(rule),
+    // Stock blocks list one quoted key=value per line with no separators.
+    ...prefBlocks.map(([node, pseudo, entries]) =>
+      `IEclipsePreferences#${node}:${pseudo} {\n  preferences:\n${Object.entries(entries).map(([k, v]) => `    '${k}=${v}'`).join('\n')}\n}`),
+  ].join('\n\n');
+
+  // ---- Contrast gate: every text color on every background it is drawn on.
+  const gate = (name, fg, bg, min = 4.5) => check(`${label} ${name}`, hex(fg), hex(bg), min);
+  for (const [name, ref] of Object.entries(sql)) {
+    if (name.includes('background')) continue;
+    const min = ['comment', 'aiSuggestion.foreground'].includes(name) ? 3 : 4.5;
+    for (const bg of ['--bg-surface', currentLine]) gate(`sql.${name} on ${bg}`, ref, bg, min);
+  }
+  gate('sql.aiSuggestion on its background', sql['aiSuggestion.foreground'], sql['aiSuggestion.background'], 3);
+  gate('editor selection text', '--text-primary', '--color-pink-100');
+  gate('editor line numbers', '--text-tertiary', '--bg-surface', 3);
+  for (const [name, ref] of Object.entries(gridValues)) {
+    for (const bg of ['--bg-surface', ...new Set(Object.values(gridRows))]) gate(`grid.${name} on ${bg}`, ref, bg, name === 'null' ? 3 : 4.5);
+  }
+  for (const bg of ['--bg-page', '--bg-accent']) gate(`grid header text on ${bg}`, grid['header.foreground'], bg);
+  for (const [name, bg] of [['tab', '--bg-page'], ['tab', '--bg-surface'], ['navigator node', '--bg-surface'], ['navigator node', '--color-success-100'], ['navigator node', '--color-warning-100']]) {
+    gate(`${name} text on ${bg}`, '--text-secondary', bg);
+  }
+  gate('navigator transient node', '--color-success-700', '--bg-surface');
+  for (const bg of ['--bg-surface', '--bg-card', '--bg-elevated', '--bg-accent', '--color-pink-100', '--color-success-100', '--color-warning-100', '--color-error-100', ...erdHeaders]) {
+    gate(`text on ${bg}`, '--text-primary', bg);
+  }
+  for (const ref of ['--text-link', '--color-error-700', '--color-warning-700', '--color-success-700', '--text-secondary']) {
+    for (const bg of ['--bg-surface', '--bg-elevated']) gate(`${ref} on ${bg}`, ref, bg);
+  }
+  for (const bg of ['--bg-surface', currentLine]) gate(`xml tag on ${bg}`, '--color-magenta-500', bg);
+
+  return css;
+}
+
+function dbeaverPlugin(themes) {
+  const pluginXml = `<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<!-- Generated by scripts/build.mjs from tokens/ - do not edit by hand. -->
+<plugin>
+   <extension point="org.eclipse.e4.ui.css.swt.theme">
+${Object.keys(themes)
+  .map((v) => `      <theme id="${DBEAVER_BUNDLE}.pigrabb_${v}" label="${NAMES[v]}" basestylesheeturi="css/pigrabb_${v}.css" os="macosx" isDarkTheme="${v === 'dark'}"/>`)
+  .join('\n')}
+   </extension>
+</plugin>
+`;
+  const files = { 'plugin.xml': pluginXml };
+  for (const [v, css] of Object.entries(themes)) files[`css/pigrabb_${v}.css`] = `${css}\n`;
+  // DBeaver only reloads a bundle whose version changed, so the version follows the content.
+  const hash = createHash('sha256');
+  for (const [path, content] of Object.entries(files)) hash.update(`${path}\n${content}`);
+  files['META-INF/MANIFEST.MF'] = `Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: PigRabb Themes
+Bundle-SymbolicName: ${DBEAVER_BUNDLE};singleton:=true
+Bundle-Version: 1.0.0.${hash.digest('hex').slice(0, 8)}
+Bundle-Vendor: PigRabb Studio
+`;
+  return Object.fromEntries(Object.entries(files).map(([path, content]) => [`dbeaver/plugin/${path}`, content]));
+}
+
 // ---------- main ----------
 
 function build() {
@@ -461,6 +859,7 @@ function build() {
   const extras = JSON.parse(readFileSync(join(ROOT, 'tokens/extras.json'), 'utf8'));
   const outputs = {};
   const zedThemes = [];
+  const dbeaverThemes = {};
   for (const variant of ['dark', 'light']) {
     const get = palette(tokens, extras, variant);
     const ansi = ansiColors(get, extras.ansi[variant], variant);
@@ -468,7 +867,9 @@ function build() {
     // macOS Terminal names an imported profile after the file, not its `name` key.
     outputs[`macos-terminal/${NAMES[variant]}.terminal`] = macosTerminalProfile(get, ansi, variant);
     zedThemes.push(zedTheme(get, ansi, variant));
+    dbeaverThemes[variant] = dbeaverTheme(get, tokens, ansi, variant);
   }
+  Object.assign(outputs, dbeaverPlugin(dbeaverThemes));
   outputs['zed/pigrabb.json'] = `${JSON.stringify(
     {
       $schema: 'https://zed.dev/schema/themes/v0.2.0.json',
@@ -491,6 +892,7 @@ function build() {
     process.exit(1);
   }
   for (const [path, content] of Object.entries(outputs)) {
+    mkdirSync(dirname(join(ROOT, path)), { recursive: true });
     writeFileSync(join(ROOT, path), content);
     console.log(`wrote ${path}`);
   }

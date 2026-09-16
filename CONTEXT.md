@@ -1,6 +1,6 @@
 # PigRabb Themes
 
-Color themes for developer software, derived from the PigRabb Studio Design System, one folder per software.
+Themes for developer software, derived from the PigRabb Studio Design System, one folder per software.
 
 ## Language
 
@@ -11,7 +11,7 @@ PigRabb Studio Design System on claude.ai/design — the only source of color tr
 _Avoid_: DS kit, brand guide, palette
 
 **Token**:
-A named OKLCH color value defined by the Design System, such as `--color-pink-500` or `--text-primary`.
+A named value defined by the Design System — an OKLCH color such as `--color-pink-500` or `--text-primary`, or a type value such as `--font-mono` or `--text-sm`.
 _Avoid_: variable, swatch
 
 **Extra**:
@@ -21,7 +21,7 @@ _Avoid_: override, custom color
 ### Output
 
 **Target**:
-One piece of software that receives a Theme (Warp Terminal, Zed Editor, macOS Terminal).
+One piece of software that receives a Theme (Warp Terminal, Zed Editor, macOS Terminal, DBeaver).
 _Avoid_: app, platform, editor
 
 **macOS Terminal**:
