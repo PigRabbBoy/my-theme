@@ -5,3 +5,4 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")" && pwd)"
 "$root/warp/install.sh" "$@"
 "$root/zed/install.sh" "$@"
+"$root/macos-terminal/install.sh" "$@"
